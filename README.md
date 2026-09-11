@@ -1,75 +1,140 @@
-# Flight Telemetry Data Architecture
+# ✈️ Flight Telemetry Data Architecture
 
 ## 1. Project Overview
+
 This repository implements a multi-tiered Data Engineering architecture designed to process high-velocity flight telemetry. By routing message streams through specialized channels, the system bridges the gap between low-latency real-time tracking and distributed enterprise storage, ensuring optimal performance for varying analytical needs.
+
+---
 
 ## 2. Architecture Flowchart
 
 ```mermaid
 graph TD
     A[Flight Telemetry Producer] -->|Generates JSON| B(Apache ActiveMQ)
+    B --> L[Docker Engine]
     B -->|Stream| C[Python Consumer]
     C --> D[(InfluxDB)]
     D --> E[Grafana Real-Time Dashboard]
     B -->|Stream| F[Apache PySpark]
     F --> G[Live Analytics & Alerts]
-    H[Prometheus] -->|Scrapes Container Health| E
+    G --> E
+    L -->|Exposes Metrics| H[Prometheus]
+    H -->|Scrapes Container Health| E
     B -->|Stream| I[Apache NiFi]
     I -->|100MB Bin-Packing| J[(Hadoop HDFS Data Lake)]
     J --> K[Trino SQL Engine]
     K --> E
+```
 
-    3. Pipeline Breakdown
-The system utilizes Apache ActiveMQ as the central message broker, fanning data out to four distinct paths:
+---
 
-Pipeline 1 (Real-Time Time-Series): Routes telemetry to InfluxDB for instantaneous visualization and tracking via Grafana.
+## 3. Pipeline Breakdown
 
-Pipeline 2 (Micro-Batch Analytics): Employs Apache PySpark for live data aggregation, fault detection, and threshold alerting.
+### 3.1 Summary Matrix
 
-Pipeline 3 (System Monitoring): Uses Prometheus to scrape infrastructure health and container performance metrics.
+| S.No. | Pipeline Name | Target Stack / Tools | Operational Focus & Output |
+|---|---|---|---|
+| 3.1 | Real-Time Time-Series | InfluxDB & Grafana | Telemetry routing for instantaneous visualization and tracking via Grafana |
+| 3.2 | Micro-Batch Analytics | Apache PySpark | Live data aggregation, fault detection, and threshold alerting |
+| 3.3 | System Monitoring | Prometheus | Infrastructure health and container performance metrics scraping |
+| 3.4 | Big Data Lakehouse | Apache NiFi, HDFS, Trino | Stream compression into 100MB HDFS blocks for historical Trino SQL querying |
 
-Pipeline 4 (Big Data Lakehouse): Compresses high-speed streams into 100MB HDFS blocks via Apache NiFi, which are then mapped for historical Trino SQL querying.
+### 3.2 Detailed Breakdown
 
-4. Execution: Individual Pipelines
-To respect standard hardware memory limits, you must clear your Docker engine first by typing docker rm -f $(docker ps -a -q) in your terminal. Then, run pipelines in isolation.
+#### ⏱️ Pipeline 1 — Real-Time Time-Series
+- **Central Message Broker:** Apache ActiveMQ
+- **Database Target:** InfluxDB
+- **Visualization Engine:** Grafana
+- **Description:** Routes telemetry to InfluxDB for instantaneous visualization and tracking via Grafana.
 
-Pipelines 1 & 3: Time-Series & Monitoring
+#### ⚡ Pipeline 2 — Micro-Batch Analytics
+- **Central Message Broker:** Apache ActiveMQ
+- **Analytics Engine:** Apache PySpark
+- **Description:** Employs Apache PySpark for live data aggregation, fault detection, and threshold alerting.
 
-Step 1: Boot the stack by running docker compose -f docker-compose.yml up -d influxdb grafana activemq prometheus
+#### 📊 Pipeline 3 — System Monitoring
+- **Target Engine:** Docker Infrastructure
+- **Monitoring Engine:** Prometheus
+- **Description:** Uses Prometheus to scrape infrastructure health and container performance metrics.
 
-Step 2: Start the data stream by running python producer.py
+#### 🗄️ Pipeline 4 — Big Data Lakehouse
+- **Central Message Broker:** Apache ActiveMQ
+- **Ingestion Flow:** Apache NiFi
+- **Storage & Query Layer:** HDFS (100MB compressed blocks) & Trino SQL
+- **Description:** Compresses high-speed streams into 100MB HDFS blocks via Apache NiFi, which are then mapped for historical Trino SQL querying.
 
-Step 3: Start the database consumer by running python influx_consumer.py
+---
 
-Step 4: View the live dashboards by opening http://localhost:3001 in your browser.
+## 4. Execution: Individual Pipelines
 
-Pipeline 2: Spark Analytics
+To respect standard hardware memory limits, clear your Docker engine first before running a pipeline in isolation.
 
-Step 1: Boot the broker by running docker compose -f docker-compose.yml up -d activemq
+### 4.1 Prerequisites
 
-Step 2: Start the data stream by running python producer.py
+Run this command in your terminal before initiating any single pipeline:
 
-Step 3: Start the analytics engine by running python spark_processor.py
+```bash
+docker rm -f $(docker ps -a -q)
+```
 
-Pipeline 4: Big Data Lakehouse
+### 4.2 Individual Pipeline Execution Steps
 
-Step 1: Boot the architecture by running docker compose -f docker-compose-lakehouse.yml up -d
+**Pipelines 1 & 3 — Time-Series & Monitoring**
 
-Step 2: Start the data stream by running python producer.py
+| Step | Command / Action | Location / Details |
+|---|---|---|
+| 1 | `docker compose -f docker-compose.yml up -d influxdb grafana activemq prometheus` | Boot infrastructure services |
+| 2 | `python producer.py` | Start telemetry data stream |
+| 3 | `python influx_consumer.py` | Start database consumer |
+| 4 | Open `http://localhost:3001` | View live dashboards in browser |
 
-Step 3: Build the drag-and-drop flow in Apache NiFi at https://localhost:8443/nifi
+**Pipeline 2 — Spark Analytics**
 
-Step 4: Map the SQL schema by running docker exec -it <trino_container_name> trino
+| Step | Command / Action | Location / Details |
+|---|---|---|
+| 1 | `docker compose -f docker-compose.yml up -d activemq` | Boot ActiveMQ broker |
+| 2 | `python producer.py` | Start telemetry data stream |
+| 3 | `python spark_processor.py` | Start analytics engine |
 
-5. Execution: Combined System
+**Pipeline 4 — Big Data Lakehouse**
+
+| Step | Command / Action | Location / Details |
+|---|---|---|
+| 1 | `docker compose -f docker-compose-lakehouse.yml up -d` | Boot Lakehouse architecture |
+| 2 | `python producer.py` | Start telemetry data stream |
+| 3 | Open `https://localhost:8443/nifi` | Build drag-and-drop flow in Apache NiFi |
+| 4 | `docker exec -it <trino_container_name> trino` | Map SQL schema |
+
+---
+
+## 5. Execution: Combined System
+
 If deploying on a high-performance workstation, you can run the entire architecture simultaneously to watch data route through all four pipelines at once.
 
-Boot the primary stack: docker compose -f docker-compose.yml up -d
+**Boot Primary Stack:**
 
-Boot the Lakehouse stack: docker compose -f docker-compose-lakehouse.yml up -d
+```bash
+docker compose -f docker-compose.yml up -d
+```
 
-Start the Python scripts: python producer.py, then python influx_consumer.py, then python spark_processor.py
+**Boot Lakehouse Stack:**
 
-6. Legal
-Copyright (c) 2026 Ram Sudan. All Rights Reserved.
-This project and its source code are strictly proprietary. No part of this software may be copied, reproduced, or distributed without prior written permission.
+```bash
+docker compose -f docker-compose-lakehouse.yml up -d
+```
+
+**Start Python Pipeline Services (in order):**
+
+1. **Start Producer Stream:** `python producer.py`
+2. **Start Database Ingestion:** `python influx_consumer.py`
+3. **Start Spark Analytics Processor:** `python spark_processor.py`
+
+---
+
+## 6. Legal
+
+**Copyright:** Copyright (c) 2026 Ram Sudan. All Rights Reserved.
+
+**License Type:** Strictly Proprietary.
+
+**Terms:** This project and its source code are strictly proprietary. No part of this software may be copied, reproduced, or distributed without prior written permission.
