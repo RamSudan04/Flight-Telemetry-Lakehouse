@@ -8,25 +8,16 @@ This repository implements a multi-tiered Data Engineering architecture designed
 ```mermaid
 graph TD
     A[Flight Telemetry Producer] -->|Generates JSON| B(Apache ActiveMQ)
-    
-    %% Pipeline 1: Time-Series
     B -->|Stream| C[Python Consumer]
     C --> D[(InfluxDB)]
     D --> E[Grafana Real-Time Dashboard]
-    
-    %% Pipeline 2: Spark Analytics
     B -->|Stream| F[Apache PySpark]
     F --> G[Live Analytics & Alerts]
-    
-    %% Pipeline 3: System Monitoring
     H[Prometheus] -->|Scrapes Container Health| E
-    
-    %% Pipeline 4: Lakehouse
     B -->|Stream| I[Apache NiFi]
     I -->|100MB Bin-Packing| J[(Hadoop HDFS Data Lake)]
     J --> K[Trino SQL Engine]
     K --> E
-
 
     3. Pipeline Breakdown
 The system utilizes Apache ActiveMQ as the central message broker, fanning data out to four distinct paths:
