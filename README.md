@@ -1,48 +1,46 @@
 # Flight Telemetry Data Architecture
 
-## Project Overview
-This repository contains a comprehensive, multi-tiered Data Engineering architecture designed for flight telemetry. To handle varying requirements for latency, analytics, and historical storage, the system routes high-speed message streams through four distinct processing pipelines. 
+## 1. Project Overview
+This repository implements a multi-tiered Data Engineering architecture designed to process high-velocity flight telemetry. By routing message streams through specialized channels, the system bridges the gap between low-latency real-time tracking and distributed enterprise storage, ensuring optimal performance for varying analytical needs.
 
-## The Four Pipelines
-This architecture utilizes Apache ActiveMQ as the central message broker, fanning out telemetry data to the following isolated pipelines:
+## 2. Pipeline Architecture
+The system utilizes Apache ActiveMQ as the central message broker, fanning data out to four distinct paths:
+*   **Pipeline 1 (Real-Time Time-Series):** Routes telemetry to InfluxDB for instantaneous visualization and tracking via Grafana.
+*   **Pipeline 2 (Micro-Batch Analytics):** Employs Apache PySpark for live data aggregation, fault detection, and threshold alerting.
+*   **Pipeline 3 (System Monitoring):** Uses Prometheus to scrape infrastructure health and container performance metrics.
+*   **Pipeline 4 (Big Data Lakehouse):** Compresses high-speed streams into 100MB HDFS blocks via Apache NiFi, which are then mapped to a Hive Metastore for historical Trino SQL querying.
 
-*   **Pipeline 1: Real-Time Time-Series (Ultra-Low Latency)**
-    *   **Flow:** ActiveMQ -> Python Consumer -> InfluxDB -> Grafana
-    *   **Purpose:** Instantaneous metric visualization using Flux queries for live flight tracking.
-*   **Pipeline 2: Micro-Batch Processing (Analytics & Alerting)**
-    *   **Flow:** ActiveMQ -> Apache Spark (PySpark)
-    *   **Purpose:** Real-time data aggregation, fault detection, and threshold warning flags.
-*   **Pipeline 3: System Monitoring (Pull-Based Metrics)**
-    *   **Flow:** Prometheus -> Grafana
-    *   **Purpose:** Infrastructure health monitoring and metric scraping.
-*   **Pipeline 4: Big Data Lakehouse (Historical Batch Storage)**
-    *   **Flow:** ActiveMQ -> Apache NiFi -> Hadoop (HDFS) -> Trino -> Grafana
-    *   **Purpose:** Compresses high-velocity streams into 100MB blocks via NiFi Bin-Packing, mapping them to a Hive Metastore for historical SQL querying via Trino.
+## 3. Execution: Individual Pipelines
+To respect standard hardware memory limits, clear your Docker engine first (`docker rm -f $(docker ps -a -q)`), then run pipelines in isolation:
 
-## Operational Guide (Isolated Execution)
-Due to the heavy JVM memory requirements of these enterprise systems, the pipelines are divided into specific `docker-compose` files to allow isolated execution on standard hardware.
-
-**To run a specific pipeline, ensure all others are shut down first:**
-`docker rm -f $(docker ps -a -q)`
-
-**1. Booting the Time-Series & Monitoring Stack (Pipelines 1 & 3)**
+**Pipelines 1 & 3 (Time-Series & Monitoring)**
 ```bash
-docker-compose -f docker-compose.yml up -d
+docker compose -f docker-compose.yml up -d influxdb grafana activemq prometheus
 python producer.py
 python influx_consumer.py
+(Access dashboards at http://localhost:3001)
 
-**2. Booting the Spark Analytics Stack (Pipeline 2)**
+Pipeline 2 (Spark Analytics)
 
 Bash
-# Ensure ActiveMQ is running
+docker compose -f docker-compose.yml up -d activemq
 python producer.py
 python spark_processor.py
-**3. Booting the Big Data Lakehouse (Pipeline 4)**
+Pipeline 4 (Big Data Lakehouse)
 
 Bash
-docker-compose -f docker-compose-lakehouse.yml up -d
+docker compose -f docker-compose-lakehouse.yml up -d
 python producer.py
-# Access NiFi UI at https://localhost:8443/nifi to initialize the flow
-Legal
+(Configure the flow in NiFi at https://localhost:8443/nifi and map the Trino schema via the command line).
+
+4. Execution: Combined System & Legal
+If deploying on a high-performance workstation (16GB+ RAM), you can run the entire architecture simultaneously to watch data route through all four pipelines at once.
+
+Bash
+docker compose -f docker-compose.yml up -d
+docker compose -f docker-compose-lakehouse.yml up -d
+python producer.py
+python influx_consumer.py
+python spark_processor.py
 Copyright (c) 2026 Ram Sudan. All Rights Reserved.
-This architecture and its source code are proprietary. See the LICENSE file for details.
+This project and its source code are strictly proprietary. No part of this software may be copied, reproduced, or distributed without prior written permission.
