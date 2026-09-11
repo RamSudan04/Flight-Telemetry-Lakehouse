@@ -30,13 +30,14 @@ Due to the heavy JVM memory requirements of these enterprise systems, the pipeli
 docker-compose -f docker-compose.yml up -d
 python producer.py
 python influx_consumer.py
-2. Booting the Spark Analytics Stack (Pipeline 2)
+
+**2. Booting the Spark Analytics Stack (Pipeline 2)**
 
 Bash
 # Ensure ActiveMQ is running
 python producer.py
 python spark_processor.py
-3. Booting the Big Data Lakehouse (Pipeline 4)
+**3. Booting the Big Data Lakehouse (Pipeline 4)**
 
 Bash
 docker-compose -f docker-compose-lakehouse.yml up -d
