@@ -1,0 +1,43 @@
+services:
+  activemq:
+    image: rmohr/activemq:latest
+    ports: ["8161:8161", "61613:61613"]
+
+  nifi:
+    image: apache/nifi:latest
+    ports: ["8443:8443"]
+    environment:
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=adminpassword123
+
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    ports: ["9870:9870", "9000:9000"]
+    environment:
+      - CLUSTER_NAME=drdo_cluster
+      
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    ports: ["9083:9083"]
+    environment:
+      SERVICE_PRECONDITION: "hive-metastore-postgresql:5432"
+
+  trino:
+    image: trinodb/trino:latest
+    ports: ["8081:8080"] 
+    volumes:
+      - ./trino-catalog:/etc/trino/catalog
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ["3001:3000"]
+    environment:
+      - GF_INSTALL_PLUGINS=starburst-trino-datasource

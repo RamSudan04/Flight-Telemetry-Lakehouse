@@ -1,0 +1,12 @@
+# Python Virtual Environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Docker and Local Data
+trino-catalog/
+*.log
+*.csv
+*.json

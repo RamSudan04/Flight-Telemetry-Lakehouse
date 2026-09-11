@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'flight_telemetry_exporter'
+    static_configs:
+      - targets: ['host.docker.internal:8000']
+
+remote_write:
+  - url: "http://host.docker.internal:8086/api/v2/prometheus/write?org=internship&bucket=flight-data-prometheus"
+    # Note: You can also pass your InfluxDB token here if authentication is strictly enforced

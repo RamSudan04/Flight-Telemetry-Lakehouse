@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  activemq:
+    image: rmohr/activemq:latest
+    ports:
+      - "8161:8161"
+      - "61613:61613"
+
+  influxdb:
+    image: influxdb:2.0
+    ports:
+      - "8086:8086"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
