@@ -1,0 +1,22 @@
+{
+  "activemq_ip": "127.0.0.1",
+  "activemq": {
+    "port": 61613,
+    "username": "admin",
+    "password": "admin",
+    "raw_topic": "/topic/flight-data",
+    "processed_topic": "/topic/flight-data-processed",
+    "prometheus_topic": "/topic/flight-data-prometheus"
+  },
+  "influxdb_ip": "127.0.0.1",
+  "influxdb": {
+    "port": 8086,
+    "username": "admin",
+    "password": "adminpassword123",
+    "org": "internship",
+    "direct_bucket": "flight-data",
+    "spark_bucket": "flight-data-spark",
+    "prometheus_bucket": "flight-data-prometheus",
+    "token": "nCOatXdrnGrti-hM_eOVnTzi_0Fy8p3BiDHAyivEtd4f5nD3C459aC-ZWJNCKq2GSpqS8kCdEScnBJ7WoKifUA=="
+  }
+}
